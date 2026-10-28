@@ -710,13 +710,22 @@
             if ('letterSpacing' in ctx) ctx.letterSpacing = px + 'px';
         }
 
+        function fitLines(ctx, text, maxW, maxLines) {
+            let lines = wrapLines(ctx, text, maxW);
+            if (lines.length > maxLines) {
+                lines = lines.slice(0, maxLines);
+                lines[maxLines - 1] = lines[maxLines - 1].replace(/\s+\S*$/, '') + '…';
+            }
+            return lines;
+        }
+
         async function buildStoryCanvas(key, useWordmark) {
             const res = archetypes[key];
             try {
                 await Promise.all([
-                    document.fonts.load('700 84px "Space Grotesk"'),
-                    document.fonts.load('500 40px "Space Grotesk"'),
-                    document.fonts.load('400 32px "Space Grotesk"'),
+                    document.fonts.load('700 88px "Space Grotesk"'),
+                    document.fonts.load('500 42px "Space Grotesk"'),
+                    document.fonts.load('400 34px "Space Grotesk"'),
                     document.fonts.load('500 22px "JetBrains Mono"')
                 ]);
             } catch (e) {}
@@ -726,20 +735,58 @@
             const ctx = c.getContext('2d');
             const cx = 540;
 
-            // Background with faint grid
+            // ---- Measure every block first, then spread the spare room evenly ----
+            const T_FONT = '700 88px "Space Grotesk", sans-serif', T_LH = 94;
+            const V_FONT = '400 34px "Space Grotesk", sans-serif', V_LH = 50;
+            const R_FONT = '500 42px "Space Grotesk", sans-serif', R_LH = 50;
+
+            ctx.font = T_FONT; setSpacing(ctx, -2);
+            const titleLines = fitLines(ctx, res.title, 820, 2);
+            ctx.font = V_FONT; setSpacing(ctx, 0);
+            const vibeLines = fitLines(ctx, res.vibe, 780, 4);
+            ctx.font = R_FONT; setSpacing(ctx, -0.5);
+            const rxLines = fitLines(ctx, res.rxTitle, 740, 2);
+
+            const TAG_H = 50, WORD_H = 56;
+            const titleH = titleLines.length * T_LH;
+            const vibeH = vibeLines.length * V_LH;
+            const rxH = 30 + 22 + 16 + rxLines.length * R_LH + 30;
+
+            // Card sits inside Instagram's safe area (about 250px free top and bottom)
+            const CARD_Y = 250, CARD_H = 1420;
+            const BODY_TOP = CARD_Y + 80, BODY_BOTTOM = CARD_Y + CARD_H - 80;
+            const GAPS = 7, MIN_GAP = 28;
+            let fs = 340;
+            const fixed = TAG_H + titleH + WORD_H + vibeH + rxH;
+            const room = BODY_BOTTOM - BODY_TOP;
+            if ((room - fixed - fs) / GAPS < MIN_GAP) {
+                fs = Math.max(220, room - fixed - MIN_GAP * GAPS);
+            }
+            const gap = (room - fixed - fs) / GAPS;
+
+            let y = BODY_TOP + gap;
+            const tagY = y;            y += TAG_H + gap;
+            const iconY = y;           y += fs + gap;
+            const titleY = y;          y += titleH + gap;
+            const wordY = y;           y += WORD_H + gap;
+            const vibeY = y;           y += vibeH + gap;
+            const rxY = y;
+
+            // ---- Background with faint grid ----
             ctx.fillStyle = PAPER2; ctx.fillRect(0, 0, 1080, 1920);
             ctx.strokeStyle = 'rgba(22,36,39,0.07)'; ctx.lineWidth = 1;
             for (let x = 0; x <= 1080; x += 60) { ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, 1920); ctx.stroke(); }
-            for (let y = 0; y <= 1920; y += 60) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(1080, y + 0.5); ctx.stroke(); }
+            for (let g = 0; g <= 1920; g += 60) { ctx.beginPath(); ctx.moveTo(0, g + 0.5); ctx.lineTo(1080, g + 0.5); ctx.stroke(); }
 
-            // Card with hard shadow
-            ctx.fillStyle = INK; ctx.fillRect(106, 276, 900, 1400);
-            ctx.fillStyle = PAPER; ctx.fillRect(90, 260, 900, 1400);
-            ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(90, 260, 900, 1400);
+            // ---- Card with hard shadow ----
+            ctx.fillStyle = INK; ctx.fillRect(106, CARD_Y + 16, 900, CARD_H);
+            ctx.fillStyle = PAPER; ctx.fillRect(90, CARD_Y, 900, CARD_H);
+            ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(90, CARD_Y, 900, CARD_H);
 
-            // Header bar: mark + wordmark
+            // ---- Header: mark + wordmark ----
+            const headMid = CARD_Y + 40;
             ctx.save();
-            ctx.translate(126, 286);
+            ctx.translate(126, headMid - 20);
             ctx.scale(40 / 1930, 40 / 1930);
             ctx.fillStyle = INK;
             ctx.fill(new Path2D(MARK_PATH), 'evenodd');
@@ -752,83 +799,82 @@
                     const h = 26, w = h * wm.naturalWidth / wm.naturalHeight;
                     ctx.save();
                     ctx.globalCompositeOperation = 'multiply';
-                    ctx.drawImage(wm, 184, 293, w, h);
+                    ctx.drawImage(wm, 184, headMid - h / 2, w, h);
                     ctx.restore();
                     wordDrawn = true;
                 } catch (e) {}
             }
-            ctx.textBaseline = 'alphabetic';
+            ctx.textBaseline = 'middle';
             ctx.fillStyle = INK;
             ctx.font = '500 22px "JetBrains Mono", monospace';
             setSpacing(ctx, 3);
-            if (!wordDrawn) { ctx.textAlign = 'left'; ctx.fillText('DAILY DOPA', 184, 314); }
+            if (!wordDrawn) { ctx.textAlign = 'left'; ctx.fillText('DAILY DOPA', 184, headMid + 1); }
             ctx.textAlign = 'right'; ctx.fillStyle = MUTED;
-            ctx.fillText('RESULT', 954, 314);
+            ctx.fillText('RESULT', 954, headMid + 1);
             ctx.strokeStyle = INK; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(90, 350); ctx.lineTo(990, 350); ctx.stroke();
+            ctx.beginPath(); ctx.moveTo(90, CARD_Y + 80); ctx.lineTo(990, CARD_Y + 80); ctx.stroke();
 
-            // Tag: your archetype
+            // ---- Tag: your archetype ----
             ctx.textAlign = 'center';
             ctx.font = '500 22px "JetBrains Mono", monospace';
             setSpacing(ctx, 3);
             const tagText = 'YOUR ARCHETYPE';
-            const tw = ctx.measureText(tagText).width + 40;
-            ctx.fillStyle = INK; ctx.fillRect(cx - tw / 2, 392, tw, 50);
-            ctx.fillStyle = PAPER; ctx.fillText(tagText, cx, 426);
+            const tw = ctx.measureText(tagText).width + 44;
+            ctx.fillStyle = INK; ctx.fillRect(cx - tw / 2, tagY, tw, TAG_H);
+            ctx.fillStyle = PAPER; ctx.fillText(tagText, cx, tagY + TAG_H / 2 + 1);
 
-            // Icon frame
-            const fs = 340, fx = cx - fs / 2, fy = 480;
-            ctx.fillStyle = FIELD; ctx.fillRect(fx, fy, fs, fs);
-            ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(fx, fy, fs, fs);
-            ctx.fillStyle = ACCENT; ctx.fillRect(fx + fs - 44, fy, 44, 44);
-            ctx.strokeRect(fx + fs - 44, fy, 44, 44);
+            // ---- Icon frame ----
+            const fx = cx - fs / 2;
+            ctx.fillStyle = FIELD; ctx.fillRect(fx, iconY, fs, fs);
+            ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(fx, iconY, fs, fs);
+            ctx.fillStyle = ACCENT; ctx.fillRect(fx + fs - 44, iconY, 44, 44);
+            ctx.strokeRect(fx + fs - 44, iconY, 44, 44);
             const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">' +
                 '<style>svg{stroke:' + INK + ';stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}' +
                 '.b{fill:' + FIELD + '}.f{fill:' + INK + ';stroke:none}.t{stroke-width:.75}</style>' + icons[key] + '</svg>';
             const iconImg = await loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
-            ctx.drawImage(iconImg, cx - 125, fy + (fs - 250) / 2, 250, 250);
+            const isz = fs * 0.74;
+            ctx.drawImage(iconImg, cx - isz / 2, iconY + (fs - isz) / 2, isz, isz);
 
-            // Title
-            ctx.fillStyle = INK; ctx.textAlign = 'center';
-            ctx.font = '700 84px "Space Grotesk", sans-serif';
-            setSpacing(ctx, -2);
-            const titleEnd = drawText(ctx, res.title, cx, 920, 800, 90, 2);
+            // ---- Title ----
+            ctx.fillStyle = INK; ctx.textAlign = 'center'; ctx.textBaseline = 'top';
+            ctx.font = T_FONT; setSpacing(ctx, -2);
+            titleLines.forEach(function (l, i) { ctx.fillText(l, cx, titleY + i * T_LH + 2); });
 
-            // Word tag
+            // ---- Word tag ----
+            ctx.textBaseline = 'middle';
             ctx.font = '500 24px "JetBrains Mono", monospace';
             setSpacing(ctx, 3);
             const word = res.word.toUpperCase();
-            const ww = ctx.measureText(word).width + 40;
-            const wy = titleEnd - 90 + 28;
-            ctx.fillStyle = ACCENT; ctx.fillRect(cx - ww / 2, wy, ww, 52);
-            ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(cx - ww / 2, wy, ww, 52);
-            ctx.fillStyle = INK; ctx.fillText(word, cx, wy + 35);
+            const ww = ctx.measureText(word).width + 44;
+            ctx.fillStyle = ACCENT; ctx.fillRect(cx - ww / 2, wordY, ww, WORD_H);
+            ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(cx - ww / 2, wordY, ww, WORD_H);
+            ctx.fillStyle = INK; ctx.fillText(word, cx, wordY + WORD_H / 2 + 1);
 
-            // Vibe
-            ctx.fillStyle = MUTED;
-            ctx.font = '400 32px "Space Grotesk", sans-serif';
-            setSpacing(ctx, 0);
-            drawText(ctx, res.vibe, cx, wy + 52 + 62, 780, 46, 3);
+            // ---- Vibe ----
+            ctx.fillStyle = MUTED; ctx.textBaseline = 'top';
+            ctx.font = V_FONT; setSpacing(ctx, 0);
+            vibeLines.forEach(function (l, i) { ctx.fillText(l, cx, vibeY + i * V_LH + 4); });
 
-            // Prescription box
-            ctx.fillStyle = INK; ctx.fillRect(130, 1360, 820, 190);
-            ctx.textAlign = 'left';
+            // ---- Prescription box ----
+            ctx.fillStyle = INK; ctx.fillRect(130, rxY, 820, rxH);
+            ctx.textAlign = 'left'; ctx.textBaseline = 'top';
             ctx.fillStyle = ACCENT;
-            ctx.font = '500 20px "JetBrains Mono", monospace';
-            setSpacing(ctx, 3);
-            ctx.fillText('TRY THIS TODAY', 166, 1412);
-            ctx.fillStyle = PAPER;
-            ctx.font = '500 40px "Space Grotesk", sans-serif';
-            setSpacing(ctx, -0.5);
-            drawText(ctx, res.rxTitle, 166, 1474, 748, 48, 2);
-
-            // Footer call to action
-            ctx.strokeStyle = INK; ctx.lineWidth = 3;
-            ctx.beginPath(); ctx.moveTo(90, 1580); ctx.lineTo(990, 1580); ctx.stroke();
-            ctx.textAlign = 'center'; ctx.fillStyle = INK;
             ctx.font = '500 22px "JetBrains Mono", monospace';
             setSpacing(ctx, 3);
-            ctx.fillText(SHARE_FOOTER, cx, 1628);
+            ctx.fillText('TRY THIS TODAY', 166, rxY + 30);
+            ctx.fillStyle = PAPER;
+            ctx.font = R_FONT; setSpacing(ctx, -0.5);
+            rxLines.forEach(function (l, i) { ctx.fillText(l, 166, rxY + 30 + 22 + 16 + i * R_LH); });
+
+            // ---- Footer ----
+            const footY = CARD_Y + CARD_H - 80;
+            ctx.strokeStyle = INK; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(90, footY); ctx.lineTo(990, footY); ctx.stroke();
+            ctx.textAlign = 'center'; ctx.textBaseline = 'middle'; ctx.fillStyle = INK;
+            ctx.font = '500 22px "JetBrains Mono", monospace';
+            setSpacing(ctx, 3);
+            ctx.fillText(SHARE_FOOTER, cx, footY + 41);
 
             return c;
         }
