@@ -1,0 +1,461 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Daily Dopa — Sensory & Attention Audit</title>
+    <!-- Google Fonts for Minimalist Luxury Aesthetic -->
+    <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@300;400;500;600&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --bg-color: #F7F5F0;
+            --card-bg: rgba(255, 255, 255, 0.7);
+            --border-color: rgba(0, 0, 0, 0.08);
+            --text-primary: #1A1A1A;
+            --text-muted: #666666;
+            --accent: #2C2C2C;
+            --glass-blur: blur(16px);
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+            font-family: 'Plus Jakarta Sans', sans-serif;
+        }
+
+        body {
+            background-color: var(--bg-color);
+            color: var(--text-primary);
+            min-height: 100vh;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+            background-image: radial-gradient(circle at 50% 10%, rgba(220, 215, 205, 0.4) 0%, transparent 60%);
+        }
+
+        .container {
+            width: 100%;
+            max-width: 580px;
+            background: var(--card-bg);
+            backdrop-filter: var(--glass-blur);
+            -webkit-backdrop-filter: var(--glass-blur);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            box-shadow: 0 20px 40px rgba(0, 0, 0, 0.03);
+            transition: all 0.4s ease;
+        }
+
+        /* Header / Brand */
+        .brand {
+            font-size: 13px;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: var(--text-muted);
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        h1 {
+            font-size: 28px;
+            font-weight: 500;
+            line-height: 1.3;
+            margin-bottom: 16px;
+            letter-spacing: -0.5px;
+        }
+
+        p {
+            color: var(--text-muted);
+            font-size: 15px;
+            line-height: 1.6;
+            margin-bottom: 28px;
+        }
+
+        /* Form / Inputs */
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 14px;
+        }
+
+        input[type="email"] {
+            width: 100%;
+            padding: 16px 20px;
+            border-radius: 12px;
+            border: 1px solid var(--border-color);
+            background: rgba(255, 255, 255, 0.9);
+            font-size: 15px;
+            color: var(--text-primary);
+            outline: none;
+            transition: border-color 0.2s;
+        }
+
+        input[type="email"]:focus {
+            border-color: var(--accent);
+        }
+
+        .consent-box {
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            text-align: left;
+            margin-top: 4px;
+        }
+
+        .consent-box input[type="checkbox"] {
+            margin-top: 3px;
+            accent-color: var(--accent);
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+
+        .consent-box label {
+            font-size: 13px;
+            color: var(--text-muted);
+            line-height: 1.4;
+            cursor: pointer;
+        }
+
+        button {
+            background: var(--accent);
+            color: #FFFFFF;
+            border: none;
+            padding: 16px 24px;
+            border-radius: 12px;
+            font-size: 15px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: opacity 0.2s, transform 0.1s;
+            margin-top: 8px;
+        }
+
+        button:hover {
+            opacity: 0.9;
+        }
+
+        button:active {
+            transform: scale(0.98);
+        }
+
+        /* Quiz Section */
+        .quiz-screen, .result-screen {
+            display: none;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 4px;
+            background: rgba(0, 0, 0, 0.05);
+            border-radius: 2px;
+            margin-bottom: 30px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: var(--accent);
+            width: 0%;
+            transition: width 0.3s ease;
+        }
+
+        .question-title {
+            font-size: 20px;
+            font-weight: 500;
+            margin-bottom: 24px;
+            line-height: 1.4;
+        }
+
+        .options-grid {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+        }
+
+        .option-btn {
+            background: rgba(255, 255, 255, 0.8);
+            border: 1px solid var(--border-color);
+            padding: 16px 20px;
+            border-radius: 12px;
+            text-align: left;
+            font-size: 15px;
+            color: var(--text-primary);
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+
+        .option-btn:hover {
+            background: #FFFFFF;
+            border-color: var(--accent);
+            transform: translateY(-1px);
+        }
+
+        /* Results Styling */
+        .result-badge {
+            display: inline-block;
+            font-size: 12px;
+            text-transform: uppercase;
+            letter-spacing: 1.5px;
+            background: rgba(0, 0, 0, 0.05);
+            padding: 6px 12px;
+            border-radius: 20px;
+            margin-bottom: 12px;
+            font-weight: 600;
+        }
+
+        .prescription-box {
+            background: rgba(255, 255, 255, 0.6);
+            border: 1px solid var(--border-color);
+            border-radius: 16px;
+            padding: 20px;
+            margin-top: 20px;
+            text-align: left;
+        }
+
+        .prescription-box h3 {
+            font-size: 15px;
+            font-weight: 600;
+            margin-bottom: 8px;
+            color: var(--accent);
+        }
+
+        .prescription-box p {
+            font-size: 14px;
+            margin-bottom: 0;
+        }
+
+        .restart-btn {
+            margin-top: 24px;
+            background: transparent;
+            color: var(--text-primary);
+            border: 1px solid var(--border-color);
+            width: 100%;
+        }
+
+        .restart-btn:hover {
+            background: rgba(0, 0, 0, 0.03);
+            opacity: 1;
+        }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <!-- SCREEN 1: Gated Email Entry -->
+        <div id="screen-welcome" class="screen">
+            <div class="brand">Daily Dopa</div>
+            <h1>What’s Driving Your Frequency?</h1>
+            <p>Take our 3-minute sensory & attention audit. Discover your unique archetype and learn how to reset your daily dopamine loop.</p>
+            <div class="input-group">
+                <input type="email" id="user-email" placeholder="Enter your email to begin..." required>
+                
+                <div class="consent-box">
+                    <input type="checkbox" id="user-consent" required>
+                    <label for="user-consent">I agree to receive Daily Dopa insights and marketing updates. Unsubscribe at any time.</label>
+                </div>
+
+                <button onclick="startQuiz()">Unlock Free Audit</button>
+            </div>
+        </div>
+
+        <!-- SCREEN 2: The Quiz Questions -->
+        <div id="screen-quiz" class="quiz-screen">
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill"></div>
+            </div>
+            <div id="question-container">
+                <!-- Injected dynamically via JS -->
+            </div>
+        </div>
+
+        <!-- SCREEN 3: Results & Prescription -->
+        <div id="screen-result" class="result-screen">
+            <div class="brand">Your Archetype Result</div>
+            <div class="result-badge" id="res-badge">Sensory Profile</div>
+            <h1 id="res-title" style="margin-bottom: 12px;"></h1>
+            <p id="res-vibe" style="margin-bottom: 16px;"></p>
+            
+            <div class="prescription-box">
+                <h3 id="rx-heading">Try This Today:</h3>
+                <p id="rx-text"></p>
+            </div>
+
+            <button class="restart-btn" onclick="location.reload()">Retake Audit</button>
+        </div>
+    </div>
+
+    <script>
+        // Quiz Questions Data (Maps answers to archetypes)
+        const questions = [
+            {
+                title: "When you have 10 free minutes between tasks, what do you naturally reach for first?",
+                options: [
+                    { text: "Touching textures, adjusting my physical desk space, or holding a warm mug.", type: "tactile" },
+                    { text: "Putting in headphones to block out the world with a specific soundscape.", type: "sonic" },
+                    { text: "Fixing my visual view, clearing desktop tabs, or curating my immediate aesthetic.", type: "visual" },
+                    { text: "Lighting a candle, making a craft coffee, or tasting something distinct.", type: "olfactory" }
+                ]
+            },
+            {
+                title: "What throws off your focus or drains your attention the fastest?",
+                options: [
+                    { text: "Sterile, harsh lighting or uncomfortable physical environments.", type: "visual" },
+                    { text: "Discordant background noise, sudden alerts, or chaotic auditory chatter.", type: "sonic" },
+                    { text: "A cluttered digital feed overflowing with noise and comparison.", type: "feed" },
+                    { text: "Running on empty physical sensations; feeling numb or autopilot.", type: "flavor" }
+                ]
+            },
+            {
+                title: "How do you prefer to recharge when mental burnout hits?",
+                options: [
+                    { text: "Total silence, zero digital input, and complete minimalism.", type: "minimalist" },
+                    { text: "Immersing myself completely into one intense creative passion project.", type: "omnivore" },
+                    { text: "Pausing to check in with my gut feeling before reacting to external energy.", type: "intuitive" },
+                    { text: "Creating a physical transition ritual to ground myself back into reality.", type: "anchor" }
+                ]
+            }
+        ];
+
+        // Archetypes Database
+        const archetypes = {
+            tactile: {
+                title: "The Tactile Purist",
+                vibe: "Craves physical reality, high-end textures, raw materials, and tactile grounding to escape digital fatigue.",
+                rxTitle: "The 2-Minute Texture Reset",
+                rxText: "Step away from all screens, close your eyes, and mindfully run your hands over three distinct physical surfaces near you for 30 seconds each without multitasking. It acts as a physical circuit-breaker from digital fatigue."
+            },
+            sonic: {
+                title: "The Sonic Architect",
+                vibe: "Lives through sound—obsessed with playlists, ambient noise, binaural beats, and auditory environments.",
+                rxTitle: "Zero-Input Audio Fast",
+                rxText: "Spend the first 15 minutes of your morning completely silent—no music, no podcasts, just ambient environment. Total silence resets your auditory filters and sharpens future focus."
+            },
+            visual: {
+                title: "The Visual Curator",
+                vibe: "Highly sensitive to color palettes, spatial symmetry, lighting, and visual storytelling.",
+                rxTitle: "The Visual Declutter",
+                rxText: "Clear your immediate physical desk or phone home screen down to one single, intentional focal point for the rest of the day to lower cognitive load."
+            },
+            olfactory: {
+                title: "The Olfactory Alchemist",
+                vibe: "Governed by scent. Uses aroma to shift moods, trigger memories, and anchor intention.",
+                rxTitle: "The Anchor Scent Protocol",
+                rxText: "Choose one specific, grounding scent (like an essential oil or candle) and use it only when locking in for deep, uninterrupted work to build a biochemical focus trigger."
+            },
+            flavor: {
+                title: "The Flavor Nomad",
+                vibe: "Seeks micro-hits of physical sensation through taste—gourmet coffee, complex spices, and sensory anchors.",
+                rxTitle: "The Single-Note Reset",
+                rxText: "Instead of mindless grazing, sip citrus-infused ice water or let a piece of dark chocolate melt slowly with zero distractions to satisfy oral stimulation mindfully."
+            },
+            intuitive: {
+                title: "The Sixth-Sense Seeker",
+                vibe: "Gut-feeling driven. Picks up on the 'energy' of a room or a digital post instantly.",
+                rxTitle: "The 5-Second Gut Pause",
+                rxText: "Before opening an app or starting a task, ask yourself: 'Am I moving toward this out of true intention or reflex?' Wait 5 seconds for your gut answer."
+            },
+            feed: {
+                title: "The Feed Alchemist",
+                vibe: "Treats the algorithm as an art form. Constantly curating and filtering digital environments.",
+                rxTitle: "The Algorithm Cleanse",
+                rxText: "Mute or unfollow 10 accounts triggering comparison today, and intentionally save 3 things that genuinely inspire your offline creative projects."
+            },
+            minimalist: {
+                title: "The Dopamine Minimalist",
+                vibe: "Actively designs friction into their day. Prefers quiet corners and deep, unbroken focus.",
+                rxTitle: "Productive Boredom",
+                rxText: "Deliberately sit for 5 minutes with nothing to do—no phone, no music—letting your mind wander. This resets your baseline dopamine threshold."
+            },
+            omnivore: {
+                title: "The Sensory Omnivore",
+                vibe: "Wants all inputs at maximum volume—good music, great visuals, rich textures, and constant flow.",
+                rxTitle: "The Sensory Sandbox",
+                rxText: "Channel your high stimulation desire into one single intentional creative outlet for 20 minutes where all your senses fire toward one project without 10 open tabs."
+            },
+            anchor: {
+                title: "The Intentional Anchor",
+                vibe: "The bridge between physical and digital worlds. Uses deliberate sensory rituals to guide focus.",
+                rxTitle: "The Bridge Ritual",
+                rxText: "Create a 1-minute physical transition ritual every time you switch from screen mode to offline life (closing your laptop with intention and taking 3 deep breaths)."
+            }
+        };
+
+        let currentQuestion = 0;
+        let scores = {};
+
+        function startQuiz() {
+            const email = document.getElementById('user-email').value;
+            const consentChecked = document.getElementById('user-consent').checked;
+
+            if(!email || !email.includes('@')) {
+                alert('Please enter a valid email address.');
+                return;
+            }
+
+            if(!consentChecked) {
+                alert('Please check the consent box to agree to marketing updates before continuing.');
+                return;
+            }
+
+            // Emails and consent status can be hooked to Formspree or a backend here!
+            console.log("Captured Email:", email, "| Consent Granted:", consentChecked);
+
+            document.getElementById('screen-welcome').style.display = 'none';
+            document.getElementById('screen-quiz').style.display = 'block';
+            loadQuestion();
+        }
+
+        function loadQuestion() {
+            if(currentQuestion >= questions.length) {
+                showResult();
+                return;
+            }
+
+            const q = questions[currentQuestion];
+            const container = document.getElementById('question-container');
+            
+            // Update progress bar
+            document.getElementById('progress-fill').style.width = ((currentQuestion / questions.length) * 100) + '%';
+
+            let html = `<div class="question-title">${q.title}</div><div class="options-grid">`;
+            q.options.forEach((opt, index) => {
+                html += `<button class="option-btn" onclick="selectAnswer('${opt.type}')">${opt.text}</button>`;
+            });
+            html += `</div>`;
+            
+            container.innerHTML = html;
+        }
+
+        function selectAnswer(type) {
+            scores[type] = (scores[type] || 0) + 1;
+            currentQuestion++;
+            loadQuestion();
+        }
+
+        function showResult() {
+            document.getElementById('screen-quiz').style.display = 'none';
+            document.getElementById('screen-result').style.display = 'block';
+
+            // Find highest scoring archetype type
+            let bestType = 'tactile';
+            let maxScore = -1;
+            for (let type in scores) {
+                if(scores[type] > maxScore) {
+                    maxScore = scores[type];
+                    bestType = type;
+                }
+            }
+
+            const res = archetypes[bestType] || archetypes['tactile'];
+
+            document.getElementById('res-title').innerText = res.title;
+            document.getElementById('res-vibe').innerText = res.vibe;
+            document.getElementById('rx-heading').innerText = "Try This Today: " + res.rxTitle;
+            document.getElementById('rx-text').innerText = res.rxText;
+        }
+    </script>
+</body>
+</html>
