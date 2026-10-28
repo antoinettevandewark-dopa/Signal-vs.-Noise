@@ -20,9 +20,12 @@
             --mono: 'JetBrains Mono', ui-monospace, monospace;
         }
 
-        * { box-sizing: border-box; margin: 0; padding: 0; }
+        * { box-sizing: border-box; margin: 0; padding: 0; -webkit-tap-highlight-color: transparent; }
+
+        html { -webkit-text-size-adjust: 100%; text-size-adjust: 100%; }
 
         body {
+            overflow-x: hidden;
             font-family: var(--sans);
             color: var(--ink);
             background-color: var(--paper-2);
@@ -31,6 +34,7 @@
                 linear-gradient(90deg, rgba(17,17,17,0.045) 1px, transparent 1px);
             background-size: 48px 48px;
             min-height: 100vh;
+            min-height: 100dvh;
             display: flex;
             flex-direction: column;
         }
@@ -122,7 +126,7 @@
             gap: 8px;
             transition: background 0.2s;
         }
-        .icon-cell:hover { background: var(--field); }
+        @media (hover: hover) { .icon-cell:hover { background: var(--field); } }
         .icon-cell svg { width: 38px; height: 38px; }
         .icon-cell span { font-family: var(--mono); font-size: 9.5px; letter-spacing: 0.06em; text-transform: uppercase; color: var(--muted); text-align: center; line-height: 1.3; }
 
@@ -136,7 +140,7 @@
             border-radius: 0;
             background: var(--field);
             font-family: var(--mono);
-            font-size: 14px;
+            font-size: 16px;
             color: var(--ink);
             outline: none;
         }
@@ -167,11 +171,15 @@
             text-transform: uppercase;
             cursor: pointer;
             transition: background 0.15s, color 0.15s, transform 0.1s;
+            touch-action: manipulation;
         }
-        .btn:hover { background: var(--accent); color: var(--ink); }
-        .btn:active { transform: translate(2px, 2px); }
+        .btn:active { background: var(--accent); color: var(--ink); transform: translate(2px, 2px); }
         .btn.ghost { background: transparent; color: var(--ink); margin-top: 20px; }
-        .btn.ghost:hover { background: var(--ink); color: var(--paper); }
+        .btn.ghost:active { background: var(--ink); color: var(--paper); }
+        @media (hover: hover) {
+            .btn:hover { background: var(--accent); color: var(--ink); }
+            .btn.ghost:hover { background: var(--ink); color: var(--paper); }
+        }
 
         /* Quiz */
         .progress { display: flex; gap: 6px; margin-bottom: 30px; }
@@ -199,10 +207,15 @@
             color: var(--ink);
             cursor: pointer;
             transition: background 0.15s, color 0.15s, transform 0.12s, box-shadow 0.12s;
+            touch-action: manipulation;
         }
         .opt .key { font-family: var(--mono); font-size: 12px; font-weight: 500; border: 1px solid currentColor; width: 28px; height: 28px; display: flex; align-items: center; justify-content: center; }
-        .opt:hover { background: var(--ink); color: var(--paper); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--accent); }
-        .opt:hover .key { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+        .opt.picked { background: var(--ink); color: var(--paper); }
+        .opt.picked .key { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+        @media (hover: hover) {
+            .opt:hover { background: var(--ink); color: var(--paper); transform: translate(-2px, -2px); box-shadow: 4px 4px 0 var(--accent); }
+            .opt:hover .key { background: var(--accent); border-color: var(--accent); color: var(--ink); }
+        }
 
         /* Result */
         .res-top { display: flex; gap: 24px; align-items: center; margin-bottom: 24px; }
@@ -231,13 +244,59 @@
 
         .quiz-screen, .result-screen { display: none; }
 
+        /* Phone layout: compact so each quiz screen fits without zooming out */
         @media (max-width: 520px) {
-            .card-body { padding: 28px 20px 24px; }
-            .card-bar { padding: 12px 20px; }
+            .ticker { padding: 6px 0; }
+            main { padding: 14px 12px 22px; align-items: flex-start; }
+            .card { box-shadow: 4px 4px 0 var(--ink); }
+            .card-bar { padding: 10px 16px; }
+            .logo-mark { width: 20px; height: 20px; }
+            .logo-word { height: 12px; }
+            .card-body { padding: 20px 16px 18px; }
+
+            .eyebrow { margin-bottom: 10px; }
+            h1 { font-size: 30px; margin-bottom: 10px; }
+            .lead { font-size: 14px; line-height: 1.5; margin-bottom: 16px; }
+            .icon-grid { margin-bottom: 18px; }
             .icon-cell span { display: none; }
-            .icon-cell { padding: 12px 4px; }
-            .res-top { flex-direction: column; align-items: flex-start; }
-            .card { box-shadow: 5px 5px 0 var(--ink); }
+            .icon-cell { padding: 9px 4px; }
+            .icon-cell svg { width: 28px; height: 28px; }
+
+            .input-group { gap: 10px; }
+            input[type="email"] { padding: 14px; }
+            .consent-box label { font-size: 12px; }
+            .form-error { min-height: 14px; font-size: 11px; }
+            .btn { padding: 15px 16px; font-size: 12px; }
+
+            .progress { margin-bottom: 18px; }
+            .q-num { margin-bottom: 10px; }
+            .question-title { font-size: 20px; margin-bottom: 16px; }
+            .options-grid { gap: 8px; }
+            .opt { grid-template-columns: 28px 1fr; gap: 10px; padding: 11px 12px; font-size: 14px; line-height: 1.4; }
+            .opt .key { width: 24px; height: 24px; font-size: 11px; }
+
+            .res-top { gap: 14px; margin-bottom: 14px; }
+            .res-frame { width: 88px; height: 88px; }
+            .res-frame svg { width: 56px; height: 56px; }
+            .res-tag { margin-bottom: 8px; }
+            #res-title { font-size: 26px; }
+            #res-word { margin-top: 8px; }
+            #res-vibe { font-size: 14px; margin-bottom: 14px; }
+            .rx { padding: 16px; }
+            .rx h3 { font-size: 17px; }
+            .rx p { font-size: 13.5px; }
+            .share { margin-top: 14px; padding: 14px; }
+            .share-row { gap: 14px; }
+            #share-preview { width: 84px; }
+            .share-actions p { font-size: 12px; }
+            .share-actions .btn { padding: 13px 14px; }
+            .btn.ghost { margin-top: 14px; }
+        }
+        @media (max-width: 520px) and (max-height: 700px) {
+            .icon-grid { display: none; }
+            h1 { font-size: 27px; }
+            .question-title { font-size: 18px; margin-bottom: 12px; }
+            .opt { padding: 9px 12px; }
         }
         @media (prefers-reduced-motion: reduce) {
             .ticker-track { animation: none; padding-left: 20px; }
@@ -546,11 +605,21 @@
             html += '</div></div>';
 
             container.innerHTML = html;
+
+            // Ignore taps for a moment so the finger that picked the last answer
+            // can't also hit the button that appears in the same spot.
+            inputLocked = true;
+            setTimeout(function () { inputLocked = false; }, 600);
         }
+
+        let inputLocked = false;
 
         document.getElementById('question-container').addEventListener('click', function (e) {
             const btn = e.target.closest('.opt');
-            if (btn) selectAnswer(btn.dataset.type);
+            if (!btn || inputLocked) return;
+            inputLocked = true;
+            btn.classList.add('picked');
+            setTimeout(function () { selectAnswer(btn.dataset.type); }, 240);
         });
 
         // Keyboard shortcut: press A–D to answer
@@ -599,6 +668,8 @@
         const INK = '#162427', PAPER = '#F5F6EE', PAPER2 = '#E7E9D9', FIELD = '#FBFCF7', MUTED = '#5A6462', ACCENT = '#D7DBA8';
         const MARK_PATH = 'M0 0H545A542.5 542.5 0 0 1 545 1085H0ZM755 557A239 239 0 1 0 277 557A239 239 0 1 0 755 557ZM1926 846H1385A542.5 542.5 0 0 0 1385 1930H1926ZM1649 1403A239 239 0 1 0 1171 1403A239 239 0 1 0 1649 1403Z';
         const WORDMARK_SRC = 'daily-dopa-wordmark.png';
+        // Text at the bottom of the shareable image. Add your brand handle or domain here if you want one.
+        const SHARE_FOOTER = 'TAKE THE AUDIT';
         let storyBlob = null;
         let storyUrl = null;
         let storyTitle = '';
@@ -757,8 +828,7 @@
             ctx.textAlign = 'center'; ctx.fillStyle = INK;
             ctx.font = '500 22px "JetBrains Mono", monospace';
             setSpacing(ctx, 3);
-            const host = (location.host || '').replace(/^www\./, '').toUpperCase();
-            ctx.fillText('TAKE THE AUDIT' + (host ? '  /  ' + host : ''), cx, 1628);
+            ctx.fillText(SHARE_FOOTER, cx, 1628);
 
             return c;
         }
