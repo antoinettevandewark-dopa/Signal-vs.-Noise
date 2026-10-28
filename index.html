@@ -385,28 +385,50 @@
 
         let currentQuestion = 0;
         let scores = {};
+function startQuiz() {
+    const email = document.getElementById('user-email').value;
+    const consentChecked = document.getElementById('user-consent').checked;
 
-        function startQuiz() {
-            const email = document.getElementById('user-email').value;
-            const consentChecked = document.getElementById('user-consent').checked;
+    if(!email || !email.includes('@')) {
+        alert('Please enter a valid email address.');
+        return;
+    }
 
-            if(!email || !email.includes('@')) {
-                alert('Please enter a valid email address.');
-                return;
-            }
+    if(!consentChecked) {
+        alert('Please check the consent box to agree to marketing updates before continuing.');
+        return;
+    }
 
-            if(!consentChecked) {
-                alert('Please check the consent box to agree to marketing updates before continuing.');
-                return;
-            }
+    // --- KLAVIYO INTEGRATION START ---
+    // Replace 'YOUR_LIST_ID' with your actual 6-character Klaviyo List ID
+    const klaviyoData = new URLSearchParams();
+    klaviyoData.append('g', 'YOUR_LIST_ID'); 
+    klaviyoData.append('email', email);
+    klaviyoData.append('$fields', '$source, $consent');
+    klaviyoData.append('$source', 'Signal vs Noise Quiz');
+    klaviyoData.append('$consent', 'web');
 
-            // Emails and consent status can be hooked to Formspree or a backend here!
-            console.log("Captured Email:", email, "| Consent Granted:", consentChecked);
+    fetch('https://manage.kmail-lists.com/ajax/subscriptions/subscribe', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/x-www-form-urlencoded',
+        },
+        body: klaviyoData
+    })
+    .then(response => response.json())
+    .then(data => {
+        console.log('Subscribed to Klaviyo successfully:', data);
+    })
+    .catch((error) => {
+        console.error('Klaviyo submission error:', error);
+    });
+    // --- KLAVIYO INTEGRATION END ---
 
-            document.getElementById('screen-welcome').style.display = 'none';
-            document.getElementById('screen-quiz').style.display = 'block';
-            loadQuestion();
-        }
+    // Move to the quiz questions screen
+    document.getElementById('screen-welcome').style.display = 'none';
+    document.getElementById('screen-quiz').style.display = 'block';
+    loadQuestion();
+}
 
         function loadQuestion() {
             if(currentQuestion >= questions.length) {
