@@ -220,6 +220,15 @@
         .rx h3 { font-size: 20px; font-weight: 500; letter-spacing: -0.01em; margin-bottom: 10px; }
         .rx p { font-size: 14.5px; line-height: 1.65; opacity: 0.85; }
 
+        /* Share */
+        .share { margin-top: 24px; border: 1px solid var(--ink); padding: 20px; background: var(--field); }
+        .share .mono { display: block; margin-bottom: 14px; color: var(--muted); }
+        .share-row { display: flex; gap: 20px; align-items: center; }
+        #share-preview { width: 108px; aspect-ratio: 9 / 16; border: 1px solid var(--ink); box-shadow: 4px 4px 0 var(--ink); flex-shrink: 0; background: var(--paper-2); object-fit: cover; }
+        .share-actions { display: flex; flex-direction: column; gap: 10px; flex: 1; }
+        .share-actions p { font-size: 13px; line-height: 1.5; color: var(--muted); margin-bottom: 4px; }
+        .share-actions .btn.ghost { margin-top: 0; }
+
         .quiz-screen, .result-screen { display: none; }
 
         @media (max-width: 520px) {
@@ -306,6 +315,18 @@
                         <span class="mono">Try this today</span>
                         <h3 id="rx-heading"></h3>
                         <p id="rx-text"></p>
+                    </div>
+
+                    <div class="share" id="share-box">
+                        <span class="mono">Share your result</span>
+                        <div class="share-row">
+                            <img id="share-preview" alt="Story-size preview of your result">
+                            <div class="share-actions">
+                                <p>A story-size image (1080 × 1920), ready for Instagram, TikTok or any story.</p>
+                                <button class="btn" id="share-btn" onclick="shareStory()" style="display:none"><span>Share to story</span><span>↗</span></button>
+                                <button class="btn ghost" onclick="downloadStory()"><span>Download image</span><span>↓</span></button>
+                            </div>
+                        </div>
                     </div>
 
                     <button class="btn ghost" onclick="location.reload()"><span>Retake audit</span><span>↺</span></button>
@@ -570,6 +591,231 @@
             document.getElementById('res-vibe').innerText = res.vibe;
             document.getElementById('rx-heading').innerText = res.rxTitle;
             document.getElementById('rx-text').innerText = res.rxText;
+
+            prepareShare(key);
+        }
+
+        // ---- Shareable story image (1080 x 1920) ----
+        const INK = '#162427', PAPER = '#F5F6EE', PAPER2 = '#E7E9D9', FIELD = '#FBFCF7', MUTED = '#5A6462', ACCENT = '#D7DBA8';
+        const MARK_PATH = 'M0 0H545A542.5 542.5 0 0 1 545 1085H0ZM755 557A239 239 0 1 0 277 557A239 239 0 1 0 755 557ZM1926 846H1385A542.5 542.5 0 0 0 1385 1930H1926ZM1649 1403A239 239 0 1 0 1171 1403A239 239 0 1 0 1649 1403Z';
+        const WORDMARK_SRC = 'daily-dopa-wordmark.png';
+        let storyBlob = null;
+        let storyUrl = null;
+        let storyTitle = '';
+
+        function loadImage(src) {
+            return new Promise(function (resolve, reject) {
+                const img = new Image();
+                img.onload = function () { resolve(img); };
+                img.onerror = reject;
+                img.src = src;
+            });
+        }
+
+        function wrapLines(ctx, text, maxW) {
+            const words = text.split(' ');
+            const lines = [];
+            let line = '';
+            words.forEach(function (w) {
+                const t = line ? line + ' ' + w : w;
+                if (ctx.measureText(t).width > maxW && line) { lines.push(line); line = w; }
+                else line = t;
+            });
+            if (line) lines.push(line);
+            return lines;
+        }
+
+        function drawText(ctx, text, x, y, maxW, lh, maxLines) {
+            let lines = wrapLines(ctx, text, maxW);
+            if (maxLines && lines.length > maxLines) {
+                lines = lines.slice(0, maxLines);
+                lines[maxLines - 1] = lines[maxLines - 1].replace(/\s+\S*$/, '') + '…';
+            }
+            lines.forEach(function (l, i) { ctx.fillText(l, x, y + i * lh); });
+            return y + lines.length * lh;
+        }
+
+        function setSpacing(ctx, px) {
+            if ('letterSpacing' in ctx) ctx.letterSpacing = px + 'px';
+        }
+
+        async function buildStoryCanvas(key, useWordmark) {
+            const res = archetypes[key];
+            try {
+                await Promise.all([
+                    document.fonts.load('700 84px "Space Grotesk"'),
+                    document.fonts.load('500 40px "Space Grotesk"'),
+                    document.fonts.load('400 32px "Space Grotesk"'),
+                    document.fonts.load('500 22px "JetBrains Mono"')
+                ]);
+            } catch (e) {}
+
+            const c = document.createElement('canvas');
+            c.width = 1080; c.height = 1920;
+            const ctx = c.getContext('2d');
+            const cx = 540;
+
+            // Background with faint grid
+            ctx.fillStyle = PAPER2; ctx.fillRect(0, 0, 1080, 1920);
+            ctx.strokeStyle = 'rgba(22,36,39,0.07)'; ctx.lineWidth = 1;
+            for (let x = 0; x <= 1080; x += 60) { ctx.beginPath(); ctx.moveTo(x + 0.5, 0); ctx.lineTo(x + 0.5, 1920); ctx.stroke(); }
+            for (let y = 0; y <= 1920; y += 60) { ctx.beginPath(); ctx.moveTo(0, y + 0.5); ctx.lineTo(1080, y + 0.5); ctx.stroke(); }
+
+            // Card with hard shadow
+            ctx.fillStyle = INK; ctx.fillRect(106, 276, 900, 1400);
+            ctx.fillStyle = PAPER; ctx.fillRect(90, 260, 900, 1400);
+            ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(90, 260, 900, 1400);
+
+            // Header bar: mark + wordmark
+            ctx.save();
+            ctx.translate(126, 286);
+            ctx.scale(40 / 1930, 40 / 1930);
+            ctx.fillStyle = INK;
+            ctx.fill(new Path2D(MARK_PATH), 'evenodd');
+            ctx.restore();
+
+            let wordDrawn = false;
+            if (useWordmark) {
+                try {
+                    const wm = await loadImage(WORDMARK_SRC);
+                    const h = 26, w = h * wm.naturalWidth / wm.naturalHeight;
+                    ctx.save();
+                    ctx.globalCompositeOperation = 'multiply';
+                    ctx.drawImage(wm, 184, 293, w, h);
+                    ctx.restore();
+                    wordDrawn = true;
+                } catch (e) {}
+            }
+            ctx.textBaseline = 'alphabetic';
+            ctx.fillStyle = INK;
+            ctx.font = '500 22px "JetBrains Mono", monospace';
+            setSpacing(ctx, 3);
+            if (!wordDrawn) { ctx.textAlign = 'left'; ctx.fillText('DAILY DOPA', 184, 314); }
+            ctx.textAlign = 'right'; ctx.fillStyle = MUTED;
+            ctx.fillText('RESULT', 954, 314);
+            ctx.strokeStyle = INK; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(90, 350); ctx.lineTo(990, 350); ctx.stroke();
+
+            // Tag: your archetype
+            ctx.textAlign = 'center';
+            ctx.font = '500 22px "JetBrains Mono", monospace';
+            setSpacing(ctx, 3);
+            const tagText = 'YOUR ARCHETYPE';
+            const tw = ctx.measureText(tagText).width + 40;
+            ctx.fillStyle = INK; ctx.fillRect(cx - tw / 2, 392, tw, 50);
+            ctx.fillStyle = PAPER; ctx.fillText(tagText, cx, 426);
+
+            // Icon frame
+            const fs = 340, fx = cx - fs / 2, fy = 480;
+            ctx.fillStyle = FIELD; ctx.fillRect(fx, fy, fs, fs);
+            ctx.strokeStyle = INK; ctx.lineWidth = 3; ctx.strokeRect(fx, fy, fs, fs);
+            ctx.fillStyle = ACCENT; ctx.fillRect(fx + fs - 44, fy, 44, 44);
+            ctx.strokeRect(fx + fs - 44, fy, 44, 44);
+            const svg = '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 64 64" width="512" height="512">' +
+                '<style>svg{stroke:' + INK + ';stroke-width:1.5;fill:none;stroke-linecap:round;stroke-linejoin:round}' +
+                '.b{fill:' + FIELD + '}.f{fill:' + INK + ';stroke:none}.t{stroke-width:.75}</style>' + icons[key] + '</svg>';
+            const iconImg = await loadImage('data:image/svg+xml;charset=utf-8,' + encodeURIComponent(svg));
+            ctx.drawImage(iconImg, cx - 125, fy + (fs - 250) / 2, 250, 250);
+
+            // Title
+            ctx.fillStyle = INK; ctx.textAlign = 'center';
+            ctx.font = '700 84px "Space Grotesk", sans-serif';
+            setSpacing(ctx, -2);
+            const titleEnd = drawText(ctx, res.title, cx, 920, 800, 90, 2);
+
+            // Word tag
+            ctx.font = '500 24px "JetBrains Mono", monospace';
+            setSpacing(ctx, 3);
+            const word = res.word.toUpperCase();
+            const ww = ctx.measureText(word).width + 40;
+            const wy = titleEnd - 90 + 28;
+            ctx.fillStyle = ACCENT; ctx.fillRect(cx - ww / 2, wy, ww, 52);
+            ctx.strokeStyle = INK; ctx.lineWidth = 2; ctx.strokeRect(cx - ww / 2, wy, ww, 52);
+            ctx.fillStyle = INK; ctx.fillText(word, cx, wy + 35);
+
+            // Vibe
+            ctx.fillStyle = MUTED;
+            ctx.font = '400 32px "Space Grotesk", sans-serif';
+            setSpacing(ctx, 0);
+            drawText(ctx, res.vibe, cx, wy + 52 + 62, 780, 46, 3);
+
+            // Prescription box
+            ctx.fillStyle = INK; ctx.fillRect(130, 1360, 820, 190);
+            ctx.textAlign = 'left';
+            ctx.fillStyle = ACCENT;
+            ctx.font = '500 20px "JetBrains Mono", monospace';
+            setSpacing(ctx, 3);
+            ctx.fillText('TRY THIS TODAY', 166, 1412);
+            ctx.fillStyle = PAPER;
+            ctx.font = '500 40px "Space Grotesk", sans-serif';
+            setSpacing(ctx, -0.5);
+            drawText(ctx, res.rxTitle, 166, 1474, 748, 48, 2);
+
+            // Footer call to action
+            ctx.strokeStyle = INK; ctx.lineWidth = 3;
+            ctx.beginPath(); ctx.moveTo(90, 1580); ctx.lineTo(990, 1580); ctx.stroke();
+            ctx.textAlign = 'center'; ctx.fillStyle = INK;
+            ctx.font = '500 22px "JetBrains Mono", monospace';
+            setSpacing(ctx, 3);
+            const host = (location.host || '').replace(/^www\./, '').toUpperCase();
+            ctx.fillText('TAKE THE AUDIT' + (host ? '  /  ' + host : ''), cx, 1628);
+
+            return c;
+        }
+
+        function canvasToBlob(canvas) {
+            return new Promise(function (resolve, reject) {
+                try { canvas.toBlob(function (b) { b ? resolve(b) : reject(new Error('blob failed')); }, 'image/png'); }
+                catch (e) { reject(e); }
+            });
+        }
+
+        async function prepareShare(key) {
+            storyTitle = archetypes[key].title;
+            try {
+                let blob;
+                try {
+                    blob = await canvasToBlob(await buildStoryCanvas(key, true));
+                } catch (e) {
+                    // Wordmark file can block export when opened locally; retry without it
+                    blob = await canvasToBlob(await buildStoryCanvas(key, false));
+                }
+                storyBlob = blob;
+                if (storyUrl) URL.revokeObjectURL(storyUrl);
+                storyUrl = URL.createObjectURL(blob);
+                document.getElementById('share-preview').src = storyUrl;
+
+                const file = new File([blob], 'daily-dopa-result.png', { type: 'image/png' });
+                const canShare = !!(navigator.canShare && navigator.canShare({ files: [file] }));
+                document.getElementById('share-btn').style.display = canShare ? 'flex' : 'none';
+            } catch (err) {
+                console.error('Share image error:', err);
+                document.getElementById('share-box').style.display = 'none';
+            }
+        }
+
+        function downloadStory() {
+            if (!storyUrl) return;
+            const a = document.createElement('a');
+            a.href = storyUrl;
+            a.download = 'daily-dopa-' + storyTitle.toLowerCase().replace(/^the /, '').replace(/\s+/g, '-') + '.png';
+            document.body.appendChild(a);
+            a.click();
+            a.remove();
+        }
+
+        function shareStory() {
+            if (!storyBlob) return;
+            const file = new File([storyBlob], 'daily-dopa-result.png', { type: 'image/png' });
+            if (navigator.canShare && navigator.canShare({ files: [file] })) {
+                navigator.share({
+                    files: [file],
+                    title: 'Daily Dopa',
+                    text: 'I got ' + storyTitle + ' on the Daily Dopa audit.'
+                }).catch(function () {});
+            } else {
+                downloadStory();
+            }
         }
     </script>
 </body>
